@@ -7,6 +7,7 @@ from learningAgents import ReinforcementAgent
 from featureExtractors import *
 
 import random,util,math
+import numpy as np
 from collections import defaultdict
 
 class QLearningAgent(ReinforcementAgent):
@@ -61,9 +62,9 @@ class QLearningAgent(ReinforcementAgent):
     	return 0.0
 
     "*** YOUR CODE HERE ***"
-    raise NotImplementedError
+    qValues = [self.getQValue(state, action) for action in possibleActions]
 
-    return 0.
+    return max(qValues)
     
   def getPolicy(self, state):
     """
@@ -76,12 +77,11 @@ class QLearningAgent(ReinforcementAgent):
     if len(possibleActions) == 0:
     	return None
     
-    best_action = None
+    bestActionArg = np.argmax([self.getQValue(state, action)
+      for action in possibleActions])
 
-    "*** YOUR CODE HERE ***"
-    raise NotImplementedError
-
-    return best_action
+    
+    return possibleActions[bestActionArg]
 
   def getAction(self, state):
     """
@@ -106,8 +106,13 @@ class QLearningAgent(ReinforcementAgent):
     #agent parameters:
     epsilon = self.epsilon
 
-    "*** YOUR CODE HERE ***"
-    raise NotImplementedError    
+    if util.flipCoin(self.epsilon):
+      action = np.random.choice(possibleActions)
+    else:
+      action = self.getPolicy(state)
+
+
+    "*** YOUR CODE HERE ***"  
 
     return action
 
@@ -122,15 +127,15 @@ class QLearningAgent(ReinforcementAgent):
     """
     #agent parameters
     gamma = self.discount
-    learning_rate = self.alpha
+    alpha = self.alpha
     
     "*** YOUR CODE HERE ***"
-    raise NotImplementedError
     
-    reference_qvalue = PleaseImplementMe
-    updated_qvalue = PleaseImplementMe
+    reference_qvalue = reward + gamma * self.getValue(nextState)
+    
+    updated_qvalue = (1-alpha)*self.getQValue(state, action) + alpha*reference_qvalue
 
-    self.setQValue(PleaseImplementMe,PleaseImplementMe,updated_qvalue)
+    self.setQValue(state, action, updated_qvalue)
 
 
 #---------------------#end of your code#---------------------#
