@@ -1,30 +1,23 @@
-"""
-Q-learning
-This file contains the same q-learning agent you implemented in the previous assignment.
-The only difference is that it doesn't need any other files with it, so you can use it as a standalone moule.
+# qlearningAgents.py
+# ------------------
+## based on http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 
-Here's an example:
->>>from qlearning import QLearningAgent
+from game import *
+from learningAgents import ReinforcementAgent
+from featureExtractors import *
 
->>>agent = QLearningAgent(alpha=0.5,epsilon=0.25,discount=0.99,
-                       getLegalActions = lambda s: actions_from_that_state)
->>>action = agent.getAction(state)
->>>agent.update(state,action, next_state,reward)
->>>agent.epsilon *= 0.99
-"""
-
-import random,math
-
+import random,util,math
 import numpy as np
 from collections import defaultdict
 
-class QLearningAgent():
+class QLearningAgent(ReinforcementAgent):
   """
     Q-Learning Agent
 
-    The two main methods are 
-    - self.getAction(state) - returns agent's action in that state
-    - self.update(state,action,nextState,reward) - returns agent's next action
+    Instance variables you have access to
+      - self.epsilon (exploration prob)
+      - self.alpha (learning rate)
+      - self.discount (discount rate aka gamma)
 
     Functions you should use
       - self.getLegalActions(state)
@@ -37,13 +30,11 @@ class QLearningAgent():
     !!!Important!!!
     NOTE: please avoid using self._qValues directly to make code cleaner
   """
-  def __init__(self,alpha,epsilon,discount,getLegalActions):
+  def __init__(self, **args):
     "We initialize agent and Q-values here."
-    self.getLegalActions= getLegalActions
+    ReinforcementAgent.__init__(self, **args)
     self._qValues = defaultdict(lambda:defaultdict(lambda:0))
-    self.alpha = alpha
-    self.epsilon = epsilon
-    self.discount = discount
+    
 
   def getQValue(self, state, action):
     """
@@ -71,7 +62,9 @@ class QLearningAgent():
     	return 0.0
 
     "*** YOUR CODE HERE ***"
-    return <compute state value>
+    qValues = [self.getQValue(state, action) for action in possibleActions]
+
+    return max(qValues)
     
   def getPolicy(self, state):
     """
@@ -84,11 +77,11 @@ class QLearningAgent():
     if len(possibleActions) == 0:
     	return None
     
-    best_action = None
+    bestActionArg = np.argmax([self.getQValue(state, action)
+      for action in possibleActions])
 
-    "*** YOUR CODE HERE ***"
-    best_action = <your code>
-    return best_action
+    
+    return possibleActions[bestActionArg]
 
   def getAction(self, state):
     """
@@ -113,9 +106,15 @@ class QLearningAgent():
     #agent parameters:
     epsilon = self.epsilon
 
-    "*** YOUR CODE HERE ***"
-    
-    return <put agent's action here>
+    if util.flipCoin(self.epsilon):
+      action = np.random.choice(possibleActions)
+    else:
+      action = self.getPolicy(state)
+
+
+    "*** YOUR CODE HERE ***"  
+
+    return action
 
   def update(self, state, action, nextState, reward):
     """
@@ -128,14 +127,53 @@ class QLearningAgent():
     """
     #agent parameters
     gamma = self.discount
-    learning_rate = self.alpha
+    alpha = self.alpha
     
-    "*** YOUR CODE HERE ***"    
-    reference_qvalue = <the "correct state value", uses reward and the value of next state>
+    "*** YOUR CODE HERE ***"
     
-    updated_qvalue = (1-learning_rate) * self.getQValue(state,action) + learning_rate * reference_qvalue
-    self.setQValue(state,action,updated_qvalue)
+    reference_qvalue = reward + gamma * self.getValue(nextState)
+    
+    updated_qvalue = (1-alpha)*self.getQValue(state, action) + alpha*reference_qvalue
+
+    self.setQValue(state, action, updated_qvalue)
 
 
 #---------------------#end of your code#---------------------#
 
+
+
+class PacmanQAgent(QLearningAgent):
+  "Exactly the same as QLearningAgent, but with different default parameters"
+
+  def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, numTraining=0, **args):
+    """
+    These default parameters can be changed from the pacman.py command line.
+    For example, to change the exploration rate, try:
+        python pacman.py -p PacmanQLearningAgent -a epsilon=0.1
+
+    alpha    - learning rate
+    epsilon  - exploration rate
+    gamma    - discount factor
+    numTraining - number of training episodes, i.e. no learning after these many episodes
+    """
+    args['epsilon'] = epsilon
+    args['gamma'] = gamma
+    args['alpha'] = alpha
+    args['numTraining'] = numTraining
+    self.index = 0  # This is always Pacman
+    QLearningAgent.__init__(self, **args)
+
+  def getAction(self, state):
+    """
+    Simply calls the getAction method of QLearningAgent and then
+    informs parent of action for Pacman.  Do not change or remove this
+    method.
+    """
+    action = QLearningAgent.getAction(self,state)
+    self.doAction(state,action)
+    return action
+
+
+
+class ApproximateQAgent(PacmanQAgent):
+    pass
